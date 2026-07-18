@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Neighbourhood Scene Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F4F6F3; --surface:#FFFFFF; --ink:#17241F; --muted:#42504A;
+    --line:#E1E7E2; --green:#2E7D5B; --green-dark:#245F46;
+    --green-tint:#EAF4EE; --green-tint-line:#BEDDCC;
+    --pos:#2E7D5B; --neg:#B4472E; --neutral:#7A6A2E;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-size:16px; line-height:1.55;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px;}
+  h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:32px;line-height:1.14;margin:0 0 8px;letter-spacing:-.01em;}
+  h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:22px;margin:0 0 6px;}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:600;color:var(--green);margin:0 0 10px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px 26px;box-shadow:0 1px 2px rgba(23,36,31,.04);}
+  @media(max-width:620px){ .card{padding:20px 16px;} h1{font-size:26px;} .wrap{padding:14px 10px 40px;} }
+  .lead{font-size:16px;color:var(--muted);margin:0 0 18px;}
+  .screen{display:none;} .screen.active{display:block;}
+
+  ul.steps{list-style:none;padding:0;margin:0 0 22px;}
+  ul.steps li{position:relative;padding:12px 14px 12px 44px;margin-bottom:8px;background:var(--green-tint);
+    border:1px solid var(--green-tint-line);border-radius:10px;font-size:15px;line-height:1.5;}
+  ul.steps li .n{position:absolute;left:14px;top:12px;width:20px;height:20px;border-radius:50%;
+    background:var(--green);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+
+  label.flabel{display:block;font-weight:600;font-size:15px;margin-bottom:8px;}
+  .tag{font-weight:500;color:var(--muted);font-size:13.5px;}
+  input[type=text],textarea,select{
+    width:100%;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;background:#fff;
+  }
+  textarea{min-height:80px;resize:vertical;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+  input.invalid{border-color:var(--neg);background:#FCF4F1;}
+  .hint{font-size:13.5px;color:var(--muted);margin-top:6px;}
+
+  button{font-family:inherit;cursor:pointer;border-radius:10px;font-weight:600;font-size:15px;border:1px solid transparent;transition:background .12s,border-color .12s;}
+  .btn-primary{background:var(--green);color:#fff;padding:13px 26px;}
+  .btn-primary:hover{background:var(--green-dark);}
+  .btn-primary:disabled{opacity:.5;cursor:default;}
+  .btn-ghost{background:transparent;color:var(--muted);border-color:var(--line);padding:12px 20px;}
+  .btn-ghost:hover{border-color:var(--muted);color:var(--ink);}
+  .btn-small{padding:8px 14px;font-size:13.5px;}
+
+  /* progress */
+  #bar-wrap{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:12px 18px;margin-bottom:16px;display:none;}
+  .bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+  .bar-label{font-size:14px;font-weight:600;color:var(--muted);}
+  .bar-pct{font-size:14px;font-weight:600;color:var(--green);}
+  .track{position:relative;height:10px;background:var(--green-tint);border-radius:999px;}
+  .fill{position:absolute;left:0;top:0;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--green-dark));border-radius:999px;transition:width .4s ease;}
+
+  /* stage */
+  #stage{
+    position:relative;width:100%;height:62vh;min-height:320px;max-height:640px;
+    overflow:hidden;background:#DDE4DF;border:1px solid var(--line);border-radius:12px;
+    touch-action:none;cursor:crosshair;
+  }
+  #canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;}
+  #sceneimg{display:block;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+  .marker{
+    position:absolute;transform-origin:50% 100%;pointer-events:auto;cursor:pointer;
+  }
+  .pin{
+    width:28px;height:28px;border-radius:50% 50% 50% 2px;transform:rotate(-45deg);
+    display:flex;align-items:center;justify-content:center;
+    border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.35);
+  }
+  .pin span{transform:rotate(45deg);color:#fff;font-size:13px;font-weight:700;line-height:1;}
+  .pin.pos{background:var(--pos);} .pin.neg{background:var(--neg);}
+
+  .stage-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px;}
+  .zoom-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;font-size:18px;color:var(--ink);font-weight:600;}
+  .zoom-btn:hover{border-color:var(--green);}
+  .tip{font-size:13.5px;color:var(--muted);flex:1;min-width:200px;}
+
+  /* spot list */
+  .spot{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;background:#FCFDFC;margin-bottom:8px;}
+  .spot .badge{flex:0 0 auto;width:24px;height:24px;border-radius:50%;color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin-top:2px;}
+  .badge.pos{background:var(--pos);} .badge.neg{background:var(--neg);}
+  .spot .body{flex:1;min-width:0;}
+  .spot .lab{font-weight:600;font-size:14.5px;}
+  .spot .exp{font-size:13.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;}
+  .spot .rm{background:none;border:0;color:var(--neg);font-size:13px;font-weight:600;padding:2px 4px;text-decoration:underline;}
+  .empty{padding:16px;border:1px dashed var(--green-tint-line);border-radius:10px;background:var(--green-tint);
+    font-size:14px;color:var(--green-dark);}
+
+  /* modal */
+  #modal-bg{position:fixed;inset:0;background:rgba(23,36,31,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50;}
+  #modal-bg.open{display:flex;}
+  #modal{background:var(--surface);border-radius:var(--radius);max-width:520px;width:100%;padding:24px 22px;max-height:92vh;overflow:auto;}
+  .choice{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .choice label{flex:1;min-width:150px;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;cursor:pointer;font-size:14.5px;font-weight:500;}
+  .choice input{appearance:none;-webkit-appearance:none;margin:0;width:18px;height:18px;border:2px solid #C3CDC6;border-radius:50%;position:relative;flex:0 0 auto;}
+  .choice input:checked{border-color:var(--green);}
+  .choice input:checked::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--green);}
+  .choice label:has(input:checked){border-color:var(--green);background:var(--green-tint);}
+  .modal-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;}
+  .err{color:var(--neg);font-size:13.5px;font-weight:500;min-height:20px;}
+
+  .divider{height:1px;background:var(--line);margin:22px 0;}
+
+  /* rating scale */
+  .opts{display:flex;flex-direction:column;gap:8px;}
+  label.opt{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;cursor:pointer;font-size:14.5px;line-height:1.4;}
+  label.opt:hover{border-color:var(--green-tint-line);}
+  label.opt input{appearance:none;-webkit-appearance:none;margin:0;flex:0 0 auto;width:18px;height:18px;
+    border:2px solid #C3CDC6;border-radius:50%;position:relative;}
+  label.opt input:checked{border-color:var(--green);}
+  label.opt input:checked::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--green);}
+  label.opt:has(input:checked){border-color:var(--green);background:var(--green-tint);}
+  #overall-block.invalid .opts{outline:2px solid var(--neg);outline-offset:6px;border-radius:10px;}
+  .saving{font-size:14px;color:var(--muted);}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="bar-wrap">
+    <div class="bar-top">
+      <span class="bar-label" id="bar-label">Scene 1</span>
+      <span class="bar-pct" id="bar-pct">0%</span>
+    </div>
+    <div class="track"><div class="fill" id="bar-fill"></div></div>
+  </div>
+
+  <!-- INTRO -->
+  <section id="s-intro" class="screen active card">
+    <p class="eyebrow">Neighbourhood walking research</p>
+    <h1>What do you notice in this street?</h1>
+    <p class="lead">You will be shown pictures of neighbourhood streets. There are no right or wrong answers &mdash; we are interested in what <em>you</em> notice and how it would affect your own walking.</p>
+    <ul class="steps">
+      <li><span class="n">1</span> Look around each picture. You can zoom in and drag to move, just like a map.</li>
+      <li><span class="n">2</span> Tap or click anything you notice that would <strong>encourage</strong> or <strong>discourage</strong> you from walking there.</li>
+      <li><span class="n">3</span> Tell us what it is and why it matters to you. Mark as many or as few things as you like.</li>
+      <li><span class="n">4</span> At the end of each picture we will ask what you feel is missing.</li>
+    </ul>
+
+    <div style="margin-bottom:18px;">
+      <label class="flabel" for="f-code">Code assigned <span class="tag">(mandatory / shared with you by email)</span></label>
+      <input type="text" id="f-code" autocomplete="off" />
+      <div class="hint" id="code-hint">Enter the participant code given to you by the research team.</div>
+    </div>
+
+    <button class="btn-primary" id="btn-start">Start</button>
+  </section>
+
+  <!-- SCENE -->
+  <section id="s-scene" class="screen">
+    <div class="card">
+      <p class="eyebrow" id="scene-eyebrow">Scene 1</p>
+      <h2 id="scene-title">A residential street</h2>
+      <p class="lead" id="scene-sub">Imagine this is a street in your own neighbourhood. Tap anything that would encourage or discourage you from walking here.</p>
+
+      <div id="stage">
+        <div id="canvas">
+          <img id="sceneimg" alt="Neighbourhood street scene" />
+        </div>
+      </div>
+
+      <div class="stage-tools">
+        <button class="zoom-btn" id="zoom-in" title="Zoom in" type="button">+</button>
+        <button class="zoom-btn" id="zoom-out" title="Zoom out" type="button">&minus;</button>
+        <button class="zoom-btn" id="zoom-reset" title="Fit image" type="button" style="width:auto;padding:0 12px;font-size:13.5px;">Fit</button>
+        <span class="tip">Drag to move around. Pinch or scroll to zoom. Tap the picture to mark something.</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2 style="font-size:18px;">Things you marked <span id="spot-count" class="tag"></span></h2>
+      <div id="spot-list"></div>
+
+      <div class="divider"></div>
+
+      <div style="margin-bottom:20px;" id="overall-block">
+        <label class="flabel">Overall, how would this area encourage you to walk? <span class="tag">(select only one)</span></label>
+        <div class="opts" id="overall-opts">
+          <label class="opt"><input type="radio" name="f-overall" value="Highly encourage" /><span>Highly encourage</span></label>
+          <label class="opt"><input type="radio" name="f-overall" value="Encourage" /><span>Encourage</span></label>
+          <label class="opt"><input type="radio" name="f-overall" value="Neutral" /><span>Neutral</span></label>
+          <label class="opt"><input type="radio" name="f-overall" value="Discourage" /><span>Discourage</span></label>
+          <label class="opt"><input type="radio" name="f-overall" value="Highly discourage" /><span>Highly discourage</span></label>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="flabel" for="f-comment">Any general comment you want to add about this picture? <span class="tag">(optional)</span></label>
+        <textarea id="f-comment" placeholder="Anything else you noticed or want to tell us&hellip;"></textarea>
+      </div>
+
+      <div class="err" id="scene-err"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+        <button class="btn-primary" id="btn-next">Save and continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- THANKS -->
+  <section id="s-thanks" class="screen card">
+    <p class="eyebrow">Complete</p>
+    <h1>Thank you</h1>
+    <p class="lead">Your observations have been recorded. Thank you for taking the time to look closely and share what you noticed.</p>
+  </section>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg">
+  <div id="modal">
+    <p class="eyebrow" id="m-eyebrow">New mark</p>
+    <h2 id="m-title">What did you notice here?</h2>
+
+    <div style="margin:14px 0 6px;">
+      <label class="flabel">Would this encourage or discourage your walking?</label>
+      <div class="choice">
+        <label><input type="radio" name="m-dir" value="Encourages" /> Encourages me</label>
+        <label><input type="radio" name="m-dir" value="Discourages" /> Discourages me</label>
+      </div>
+    </div>
+
+    <div style="margin:16px 0 6px;">
+      <label class="flabel" for="m-label">What is it?</label>
+      <input type="text" id="m-label" placeholder="e.g. cracked sidewalk, bench, trees" autocomplete="off" />
+    </div>
+
+    <div style="margin:16px 0 6px;">
+      <label class="flabel" for="m-exp">Why does it matter to you? <span class="tag">(optional)</span></label>
+      <textarea id="m-exp" placeholder="Tell us in your own words&hellip;"></textarea>
+    </div>
+
+    <div class="err" id="m-err"></div>
+    <div class="modal-nav">
+      <button class="btn-ghost" id="m-cancel" type="button">Cancel</button>
+      <button class="btn-primary" id="m-save" type="button">Save mark</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONFIG  — add scenes here as you create them
+   ============================================================ */
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwVn8EqTS-ldaSGvuWl2ciArLrZu6xjepSDvyXurXITaTvTdjcR9ng7XdE1RIi_yYqb/exec";
+
+var SCENES = [
+  {
+    id: "scene1",
+    file: "scene1.jpg",
+    title: "A residential street",
+    sub: "Imagine this is a street in your own neighbourhood. Tap anything that would encourage or discourage you from walking here."
+  }
+  // { id:"scene2", file:"scene2.jpg", title:"…", sub:"…" },
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var sessionId = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+var participant = "";
+var sceneIndex = 0;
+var spots = [];          // spots for current scene
+var sceneStart = 0;
+var pendingPoint = null; // {x,y} percentages awaiting modal save
+
+/* ============================================================
+   VIEWER (zoom + pan)
+   ============================================================ */
+var stage = document.getElementById("stage");
+var canvas = document.getElementById("canvas");
+var img = document.getElementById("sceneimg");
+
+var scale = 1, minScale = 1, maxScale = 6, tx = 0, ty = 0;
+var natW = 0, natH = 0;
+
+function applyTransform(){
+  canvas.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+  var inv = 1 / scale;
+  var pins = canvas.querySelectorAll(".marker");
+  for (var i = 0; i < pins.length; i++){
+    pins[i].style.transform = "translate(-50%,-100%) scale(" + inv + ")";
+  }
+}
+
+function fitImage(){
+  if (!natW || !natH) return;
+  var sw = stage.clientWidth, sh = stage.clientHeight;
+  minScale = Math.min(sw / natW, sh / natH);
+  scale = minScale;
+  tx = (sw - natW * scale) / 2;
+  ty = (sh - natH * scale) / 2;
+  applyTransform();
+}
+
+function clampPan(){
+  var sw = stage.clientWidth, sh = stage.clientHeight;
+  var w = natW * scale, h = natH * scale;
+  if (w <= sw) tx = (sw - w) / 2;
+  else tx = Math.min(0, Math.max(sw - w, tx));
+  if (h <= sh) ty = (sh - h) / 2;
+  else ty = Math.min(0, Math.max(sh - h, ty));
+}
+
+function zoomAt(cx, cy, factor){
+  var prev = scale;
+  scale = Math.max(minScale, Math.min(maxScale, scale * factor));
+  if (scale === prev) return;
+  var r = stage.getBoundingClientRect();
+  var px = cx - r.left, py = cy - r.top;
+  tx = px - (px - tx) * (scale / prev);
+  ty = py - (py - ty) * (scale / prev);
+  clampPan(); applyTransform();
+}
+
+img.addEventListener("load", function(){
+  natW = img.naturalWidth; natH = img.naturalHeight;
+  img.style.width = natW + "px"; img.style.height = natH + "px";
+  fitImage();
+});
+window.addEventListener("resize", function(){
+  if (!natW) return;
+  var sw = stage.clientWidth, sh = stage.clientHeight;
+  minScale = Math.min(sw / natW, sh / natH);
+  if (scale < minScale) scale = minScale;
+  clampPan(); applyTransform();
+});
+
+stage.addEventListener("wheel", function(e){
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1/1.15);
+}, {passive:false});
+
+document.getElementById("zoom-in").addEventListener("click", function(){
+  var r = stage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1.4);
+});
+document.getElementById("zoom-out").addEventListener("click", function(){
+  var r = stage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1/1.4);
+});
+document.getElementById("zoom-reset").addEventListener("click", fitImage);
+
+/* pointer handling: drag = pan, tap = place marker, 2 pointers = pinch */
+var pointers = {}, dragging = false, moved = 0, startX = 0, startY = 0, startT = 0, pinchDist = 0;
+
+stage.addEventListener("pointerdown", function(e){
+  if (e.target.closest(".marker")) return;
+  stage.setPointerCapture(e.pointerId);
+  pointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+  var ids = Object.keys(pointers);
+  if (ids.length === 1){
+    dragging = true; moved = 0; startX = e.clientX; startY = e.clientY; startT = Date.now();
+  } else if (ids.length === 2){
+    dragging = false;
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    pinchDist = Math.hypot(a.x-b.x, a.y-b.y);
+  }
+});
+
+stage.addEventListener("pointermove", function(e){
+  if (!(e.pointerId in pointers)) return;
+  var prev = pointers[e.pointerId];
+  var dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+  pointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+  var ids = Object.keys(pointers);
+
+  if (ids.length === 2){
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    var d = Math.hypot(a.x-b.x, a.y-b.y);
+    if (pinchDist > 0){
+      zoomAt((a.x+b.x)/2, (a.y+b.y)/2, d / pinchDist);
+    }
+    pinchDist = d;
+    return;
+  }
+  if (dragging){
+    moved += Math.abs(dx) + Math.abs(dy);
+    tx += dx; ty += dy;
+    clampPan(); applyTransform();
+  }
+});
+
+function endPointer(e){
+  if (!(e.pointerId in pointers)) return;
+  var wasDragging = dragging;
+  delete pointers[e.pointerId];
+  if (Object.keys(pointers).length < 2) pinchDist = 0;
+  if (Object.keys(pointers).length === 0){
+    dragging = false;
+    var quick = (Date.now() - startT) < 400;
+    if (wasDragging && moved < 8 && quick){
+      placeAt(e.clientX, e.clientY);
+    }
+  }
+}
+stage.addEventListener("pointerup", endPointer);
+stage.addEventListener("pointercancel", endPointer);
+
+function placeAt(clientX, clientY){
+  var r = img.getBoundingClientRect();
+  var x = (clientX - r.left) / r.width * 100;
+  var y = (clientY - r.top) / r.height * 100;
+  if (x < 0 || x > 100 || y < 0 || y > 100) return;
+  pendingPoint = {x: Math.round(x*100)/100, y: Math.round(y*100)/100};
+  openModal();
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+var modalBg = document.getElementById("modal-bg");
+function openModal(){
+  document.getElementById("m-label").value = "";
+  document.getElementById("m-exp").value = "";
+  var rs = document.querySelectorAll('input[name="m-dir"]');
+  for (var i=0;i<rs.length;i++) rs[i].checked = false;
+  document.getElementById("m-err").textContent = "";
+  modalBg.classList.add("open");
+  setTimeout(function(){ document.getElementById("m-label").focus(); }, 60);
+}
+function closeModal(){ modalBg.classList.remove("open"); pendingPoint = null; }
+
+document.getElementById("m-cancel").addEventListener("click", closeModal);
+modalBg.addEventListener("click", function(e){ if (e.target === modalBg) closeModal(); });
+
+document.getElementById("m-save").addEventListener("click", function(){
+  var dirEl = document.querySelector('input[name="m-dir"]:checked');
+  var label = document.getElementById("m-label").value.trim();
+  var err = document.getElementById("m-err");
+  if (!dirEl){ err.textContent = "Please choose whether it encourages or discourages you."; return; }
+  if (!label){ err.textContent = "Please tell us briefly what it is."; return; }
+  spots.push({
+    order: spots.length + 1,
+    x: pendingPoint.x, y: pendingPoint.y,
+    direction: dirEl.value,
+    label: label,
+    explanation: document.getElementById("m-exp").value.trim()
+  });
+  closeModal();
+  renderSpots();
+});
+
+/* ============================================================
+   RENDER MARKS
+   ============================================================ */
+function renderSpots(){
+  var old = canvas.querySelectorAll(".marker");
+  for (var i=0;i<old.length;i++) old[i].remove();
+
+  spots.forEach(function(s, i){
+    var m = document.createElement("div");
+    m.className = "marker";
+    m.style.left = s.x + "%";
+    m.style.top = s.y + "%";
+    m.style.transform = "translate(-50%,-100%) scale(" + (1/scale) + ")";
+    var pin = document.createElement("div");
+    pin.className = "pin " + (s.direction === "Encourages" ? "pos" : "neg");
+    var n = document.createElement("span");
+    n.textContent = (i+1);
+    pin.appendChild(n);
+    m.appendChild(pin);
+    m.title = s.label;
+    canvas.appendChild(m);
+  });
+
+  var list = document.getElementById("spot-list");
+  list.innerHTML = "";
+  document.getElementById("spot-count").textContent = spots.length ? "(" + spots.length + ")" : "";
+
+  if (spots.length === 0){
+    var e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "Nothing marked yet. Tap anywhere on the picture above to mark something you notice.";
+    list.appendChild(e);
+    return;
+  }
+
+  spots.forEach(function(s, i){
+    var row = document.createElement("div"); row.className = "spot";
+    var b = document.createElement("div");
+    b.className = "badge " + (s.direction === "Encourages" ? "pos" : "neg");
+    b.textContent = (i+1);
+    var body = document.createElement("div"); body.className = "body";
+    var lab = document.createElement("div"); lab.className = "lab";
+    lab.textContent = s.label + " \u00b7 " + s.direction.toLowerCase();
+    body.appendChild(lab);
+    if (s.explanation){
+      var ex = document.createElement("div"); ex.className = "exp"; ex.textContent = s.explanation;
+      body.appendChild(ex);
+    }
+    var rm = document.createElement("button");
+    rm.className = "rm"; rm.type = "button"; rm.textContent = "Remove";
+    rm.addEventListener("click", function(){
+      spots.splice(i,1);
+      spots.forEach(function(sp,k){ sp.order = k+1; });
+      renderSpots();
+    });
+    row.appendChild(b); row.appendChild(body); row.appendChild(rm);
+    list.appendChild(row);
+  });
+}
+
+/* ============================================================
+   FLOW
+   ============================================================ */
+function show(id){
+  var els = document.querySelectorAll(".screen");
+  for (var i=0;i<els.length;i++) els[i].classList.remove("active");
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function updateBar(){
+  var wrap = document.getElementById("bar-wrap");
+  wrap.style.display = "block";
+  var pct = Math.round(sceneIndex / SCENES.length * 100);
+  document.getElementById("bar-fill").style.width = pct + "%";
+  document.getElementById("bar-pct").textContent = pct + "%";
+  document.getElementById("bar-label").textContent =
+    "Picture " + (sceneIndex + 1) + " of " + SCENES.length;
+}
+
+function loadScene(){
+  var sc = SCENES[sceneIndex];
+  spots = [];
+  var ovr = document.querySelectorAll('input[name="f-overall"]');
+  for (var i=0;i<ovr.length;i++) ovr[i].checked = false;
+  document.getElementById("overall-block").classList.remove("invalid");
+  document.getElementById("f-comment").value = "";
+  document.getElementById("scene-err").textContent = "";
+  document.getElementById("scene-eyebrow").textContent = "Picture " + (sceneIndex+1);
+  document.getElementById("scene-title").textContent = sc.title;
+  document.getElementById("scene-sub").textContent = sc.sub;
+  img.src = sc.file;
+  renderSpots();
+  updateBar();
+  sceneStart = Date.now();
+  var btn = document.getElementById("btn-next");
+  btn.textContent = (sceneIndex === SCENES.length - 1) ? "Save and finish" : "Save and continue";
+}
+
+document.getElementById("f-code").addEventListener("input", function(e){
+  e.target.classList.remove("invalid");
+});
+
+document.getElementById("overall-opts").addEventListener("change", function(){
+  document.getElementById("overall-block").classList.remove("invalid");
+});
+
+document.getElementById("btn-start").addEventListener("click", function(){
+  var el = document.getElementById("f-code");
+  var v = el.value.trim();
+  if (!v){
+    el.classList.add("invalid");
+    document.getElementById("code-hint").textContent = "Please enter your participant code to begin.";
+    el.focus();
+    return;
+  }
+  participant = v;
+  sceneIndex = 0;
+  show("s-scene");
+  loadScene();
+});
+
+document.getElementById("btn-next").addEventListener("click", function(){
+  var btn = this;
+  var err = document.getElementById("scene-err");
+  err.textContent = "";
+
+  var ovrEl = document.querySelector('input[name="f-overall"]:checked');
+  if (!ovrEl){
+    var blk = document.getElementById("overall-block");
+    blk.classList.add("invalid");
+    err.textContent = "Please choose one overall rating before continuing.";
+    blk.scrollIntoView({behavior:"smooth", block:"center"});
+    return;
+  }
+
+  btn.disabled = true;
+  var original = btn.textContent;
+  btn.textContent = "Saving\u2026";
+
+  submitScene().then(function(ok){
+    if (!ok){
+      btn.disabled = false; btn.textContent = original;
+      err.textContent = "We could not save your answers. Please check your connection and try again.";
+      return;
+    }
+    sceneIndex++;
+    if (sceneIndex >= SCENES.length){
+      document.getElementById("bar-fill").style.width = "100%";
+      document.getElementById("bar-pct").textContent = "100%";
+      document.getElementById("bar-wrap").style.display = "none";
+      show("s-thanks");
+    } else {
+      btn.disabled = false;
+      show("s-scene");
+      loadScene();
+    }
+  });
+});
+
+/* ============================================================
+   SUBMIT
+   ============================================================ */
+function buildPayload(){
+  var sc = SCENES[sceneIndex];
+  var list = spots.slice();
+  var ovrEl = document.querySelector('input[name="f-overall"]:checked');
+  var comment = document.getElementById("f-comment").value.trim();
+  var n = list.length;
+  if (ovrEl)   list.push({order: ++n, x:null, y:null, direction:"(overall rating)",  label:ovrEl.value, explanation:""});
+  if (comment) list.push({order: ++n, x:null, y:null, direction:"(general comment)", label:"",           explanation:comment});
+
+  return {
+    sessionId: sessionId,
+    participant: participant,
+    scene: sc.id,
+    secondsOnScene: Math.round((Date.now() - sceneStart)/1000),
+    annotations: list
+  };
+}
+
+async function submitScene(){
+  var payload = buildPayload();
+  try{
+    var res = await fetch(SCRIPT_URL, { method:"POST", body: JSON.stringify(payload), redirect:"follow" });
+    try{
+      var j = await res.json();
+      if (j && j.result === "error") throw new Error("server");
+    }catch(_){ /* opaque or unreadable response — treat as sent */ }
+    return true;
+  }catch(e){
+    try{
+      await fetch(SCRIPT_URL, { method:"POST", body: JSON.stringify(payload), mode:"no-cors" });
+      return true;
+    }catch(e2){
+      return false;
+    }
+  }
+}
+</script>
+</body>
+</html>
